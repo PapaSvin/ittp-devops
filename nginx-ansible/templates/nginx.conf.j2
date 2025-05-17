@@ -1,0 +1,29 @@
+events {
+    worker_connections 1024;
+}
+
+http {
+    server {
+        listen 80;
+        server_name {{ server_name }};
+
+        # Редирект с HTTP на HTTPS
+        return 301 https://$host$request_uri;
+    }
+
+    server {
+        listen 443 ssl;
+        server_name {{ server_name }};
+
+        ssl_certificate {{ ssl_cert }};
+        ssl_certificate_key {{ ssl_key }};
+
+        ssl_protocols       TLSv1.2 TLSv1.3;
+        ssl_ciphers         HIGH:!aNULL:!MD5;
+
+        location / {
+            root {{ document_root }};
+            index index.html index.htm;
+        }
+    }
+}
