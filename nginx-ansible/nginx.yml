@@ -1,0 +1,56 @@
+---
+- name: Configure Nginx web server with HTTP and HTTPS
+  hosts: web
+  become: yes
+  vars:
+    server_name: "localhost"
+    document_root: "/usr/share/nginx/html"
+    ssl_cert: "/etc/nginx/ssl/nginx.crt"
+    ssl_key: "/etc/nginx/ssl/nginx.key"
+
+  tasks:
+    - name: Create directory for SSL certificates
+      file:
+        path: /etc/nginx/ssl
+        state: directory
+        mode: '0700'
+
+    - name: Generate self-signed SSL certificate
+      command: >
+        openssl req -x509 -nodes -days 365
+        -newkey rsa:2048
+        -keyout {{ ssl_key }}
+        -out {{ ssl_cert }}
+        -subj "/CN={{ server_name }}"
+      args:
+        creates: "{{ ssl_cert }}"
+
+    - name: Install Nginx
+      pacman:
+        name: nginx
+        state: present
+
+    - name: Configure Nginx with SSL
+      template:
+        src: templates/nginx.conf.j2
+        dest: /etc/nginx/nginx.conf
+      notify: restart nginx
+
+    - name: Start and enable Nginx service
+      systemd:
+        name: nginx
+        state: started
+        enabled: yes
+
+    - name: Wait for Nginx HTTPS port 443 to be available
+      wait_for:
+        port: 443
+        delay: 5
+        timeout: 30
+        state: started
+
+  handlers:
+    - name: restart nginx
+      systemd:
+        name: nginx
+        state: restarted
