@@ -1,1 +1,1 @@
-DEV-OPS тестовое ITTP
+DevOps тестовое ITTP
